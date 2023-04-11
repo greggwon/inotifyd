@@ -1,0 +1,12 @@
+[Unit]
+Description=iNotify File Access Manager
+After=syslog.target network.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/sysconfig/inotifyd
+Restart=true
+ExecStart=/usr/local/bin/inotifyd
+
+[Install]
+WantedBy=multi-user.target

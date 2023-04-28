@@ -77,9 +77,9 @@ public:
 	virtual ~DirPerms(){}
 
 	std::string getDescr() {
-		return getKey()
-			+", path="+getPath()
-			+", user="+getUser()
+		return "key="+getKey()
+			+", path=\""+getPath()
+			+"\", user="+getUser()
 			+", group="+getGroup()
 			+", dir-perms=d"
 			+formatPerms((getRootPerms()>>6)&07, getRootPerms() & S_ISUID)
@@ -101,7 +101,7 @@ public:
 
 		d = opendir(_path.c_str());
 		if (d == NULL) {
-			perror(_path.c_str());
+			_log.perror(_path.c_str());
 			return -1;
 		}
 		changed = 0;
@@ -111,11 +111,14 @@ public:
 			_log.error("cannot check permissions and ownership of directory: %s", _path.c_str() );
 		}
 		
-		for (de = readdir(d); de != NULL; de = readdir(d)) {
-			std::string p = _path + "/" + std::string(de->d_name);
-			// Check file in directory avoiding subdirectory perms
-			if( checkFile( p.c_str(), _user.c_str(), _group.c_str(), _perms, debugging ) != 0 ) {
-				_log.error("cannot check permissions and ownership of file: %s", p.c_str() );
+		// Check if should change file details, -1 perms says ignore files and just check the directory as we've done above
+		if( _perms != -1 ) {
+			for (de = readdir(d); de != NULL; de = readdir(d)) {
+				std::string p = _path + "/" + std::string(de->d_name);
+				// Check file in directory avoiding subdirectory perms
+				if( checkFile( p.c_str(), _user.c_str(), _group.c_str(), _perms, debugging, true ) != 0 ) {
+					_log.error("cannot check permissions and ownership of file: %s", p.c_str() );
+				}
 			}
 		}
 		closedir(d);
@@ -127,11 +130,14 @@ public:
 		int exists;
 		debugging = debugging || !makeChanges;
 		exists = stat( file, &sbuf);
+		_log.debug( "Looking at %s (%s,%s), perms=%o", file, user, grp, perms);
 		if (exists < 0) {
+			perror(file);
 			_log.perror(file);
 			return -1;
 		} else {
-			if( !onlyFiles || ( sbuf.st_mode & S_IFDIR ) == 0 ) {
+			if( !onlyFiles || (onlyFiles && ( sbuf.st_mode & S_IFDIR ) == 0 ) ) {
+				_log.debug( "Checking \"%s\" (%s,%s), perms=%o", file, user, grp, perms);
 				struct passwd pwd;
 				struct passwd *result;
 				char *buf;
@@ -156,7 +162,7 @@ public:
 					// No such user or something bad happened report
 					// error and move on
 					if (s == 0) {
-						_log.info("User %s Not found\n", user);
+						_log.error("User %s Not found", user);
 					} else {
 						errno = s;
 						_log.perror("getpwnam_r");
@@ -178,7 +184,7 @@ public:
 				if( gp == NULL ) {
 					// No such group or other problem, report it
 					_log.perror(("getgrnam: '"+std::string(grp)+"'").c_str());
-					_log.info( "Group %s not found\n", grp);
+					_log.info( "Group %s not found", grp);
 					return -1;
 				}
 				// Get the ID to use
@@ -187,31 +193,35 @@ public:
 				int st = 0;
 				// Check for owner or group id mismatch
 				if( sbuf.st_uid != uid || sbuf.st_gid != dgid ) {
-					_log.info("Wrong ownership:  user=%d, grp=%d changing to user=%d, grp=%d\n", 
+					_log.debug("Wrong ownership:  user=%d, grp=%d changing to user=%d, grp=%d", 
 						sbuf.st_uid, sbuf.st_gid, uid, dgid );
 					// If changes are enabled, fix user and/or group discrepency.
-					if( !debugging && (st = chown( file, uid, dgid ))  != 0 ) {
-						_log.perror( ("chown of "+std::string(file)).c_str() );
+					if( !debugging && ((st = chown( file, uid, dgid )) != 0) ) {
+						_log.perror( "chown of \"%s\"",file);
 					} else if( debugging && st == 0 ) {
-						_log.info( ("would chown of %s: from %d:%d to %d:%d",
-							std::string(file)).c_str(),
-							sbuf.st_uid, sbuf.st_gid, uid, dgid );
+						_log.debug( "would chown of \"%s\": from %d:%d to %d:%d",
+							file, sbuf.st_uid, sbuf.st_gid, uid, dgid );
+					} else if( !debugging && st == 0 ) {
+						_log.info( "did chown \"%s\": from %d:%d to %d:%d",
+							file, sbuf.st_uid, sbuf.st_gid, uid, dgid );
 					}
 					changed += (st != -1 && !debugging);
 				}
 				st = 0;
 				// Check user,group and others permissions masked mode matches perms
 				// setuid/setgid is not managed here, but could be added
-				if( ( (sbuf.st_mode & (S_IRWXU| S_IRWXG| S_IRWXO)) & _perms) != _perms ) {
-					_log.info( "Wrong perms for %s: %o: setting to %o\n", file, sbuf.st_mode & 07777, _perms );
+				if( (sbuf.st_mode & (S_IRWXU| S_IRWXG| S_IRWXO)) != perms ) {
+					_log.debug( "Wrong perms for %s: %o: setting to %o", file, sbuf.st_mode & 07777, perms );
 					// If changes allowed, change the mode of the file by adding missing bits
 					// We don't remove existing bits to avoid breaking temporary changes needed
-					if( !debugging && (st = chmod( file, (sbuf.st_mode | _perms) & 07777 )) != 0 ) {
-						_log.perror( ("chmod of "+std::string(file)).c_str() );
+					if( !debugging && ((st = chmod( file, perms & 0777 )) != 0) ) {
+						_log.perror( "chmod of \"%s\"", file );
 					} else if( debugging && st == 0 ) {
-						_log.info( ("would chmod of %s: from %012o to %012o",
-							std::string(file)).c_str(),
-							sbuf.st_mode, _perms );
+						_log.debug( "would chmod of \"%s\": from %012o to %012o",
+							file, sbuf.st_mode, perms );
+					} else if( !debugging && st == 0 ) {
+						_log.info( "did chmod \"%s\": from %012o to %012o",
+							file, sbuf.st_mode, perms );
 					}
 					changed += (st != -1 && !debugging);
 				}
@@ -234,25 +244,25 @@ public:
  * can be managed with some other mechanism, such as
  * watching a config file for changes.
  */
-class WatchList : public virtual std::vector<DirPerms> {
+class WatchList : public virtual std::vector<DirPerms*> {
 public:
 	WatchList() {
 	}
-	WatchList(std::vector<DirPerms> &perms) : std::vector<DirPerms>(perms) {
+	WatchList(std::vector<DirPerms*> &perms) : std::vector<DirPerms*>(perms) {
 	}
 	virtual ~WatchList() {}
 	void add( DirPerms * perms) {
-		push_back( *perms );
+		push_back( perms );
 	}
-	void addPerms( std::vector<DirPerms> & perms) {
+	void addPerms( std::vector<DirPerms *> & perms) {
 		for( auto v = perms.begin(); v != perms.end(); ++v ) {
 			push_back( *v );
 		}
 	}
-	void removePerms( std::vector<DirPerms> & perms) {
+	void removePerms( std::vector<DirPerms*> & perms) {
 		for( auto v = perms.begin(); v != perms.end(); ++v ) {
 			for( auto m = begin(); m != end(); ++m ) {
-				if( v->getKey() == m->getKey() ) {
+				if( (*v)->getKey() == (*m)->getKey() ) {
 					erase( m );
 					break;
 				}

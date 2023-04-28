@@ -6,7 +6,7 @@ After=syslog.target network.target
 Type=simple
 EnvironmentFile=-/etc/sysconfig/inotifyd
 Restart=true
-ExecStart=/usr/local/bin/inotifyd
+ExecStart=/usr/local/bin/inotifyd -i
 
 [Install]
 WantedBy=multi-user.target

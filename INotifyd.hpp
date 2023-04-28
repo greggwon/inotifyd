@@ -19,7 +19,7 @@ public:
 
 
 private:
-	std::string describeEvent(int mask );
+	std::string describeEvent(int mask, char name[], int len );
 	int fd;
 	Logger _log;
 

@@ -7,6 +7,9 @@ OFILES=\
 
 LDFLAGS=-g
 
+EXE=/usr/local/bin
+SYSTEMD=/etc/systemd/user
+
 inotify: ${OFILES}
 	${CXX} -o $@ $(OFILES) $(LDFLAGS)
 
@@ -14,6 +17,15 @@ INotifyd.o: INotifyd.hpp WatchList.hpp logger.hpp
 main.o: INotifyd.hpp WatchList.hpp logger.hpp
 
 install: ${HOME}/bin/inotify
+
+service: ${EXE}/inotifyd ${SYSTEMD}/inotifyd.service
+	systemctl enable inotifyd
+
+${SYSTEMD}/inotifyd.service: inotifyd.service
+	cp inotifyd.service ${SYSTEMD}/inotifyd.service
+
+${EXE}/inotifyd: inotify
+	cp inotify ${EXE}/inotifyd
 
 ${HOME}/bin/inotify: inotify ${HOME}/bin
 	cp inotify ${HOME}/bin/inotify

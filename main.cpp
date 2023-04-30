@@ -13,8 +13,8 @@ static void addPerms( WatchList &wl, DirPerms * perms ) {
 }
 
 void usage( const char *prog, Logger &_log ) {
-	fprintf(stderr, "usage: %s [-dsit] [-D loglevel] [-c <config>] [-l <log-file>] [-n <log-name>] [--help] <dir:user:group:dir-perm:file-perm>\n", prog );
-	_log.error( "usage: %s [-dsit] [-D loglevel] [-c <config>] [-l <log-file>] [-n <log-name>] [--help] <dir:user:group:dir-perm:file-perm>", prog );
+	fprintf(stderr, "usage: %s [-dst] [-D loglevel] [-c <config>] [-l <log-file>] [-n <log-name>] [--help] <dir:user:group:dir-perm:file-perm>\n", prog );
+	_log.error( "usage: %s [-dst] [-D loglevel] [-c <config>] [-l <log-file>] [-n <log-name>] [--help] <dir:user:group:dir-perm:file-perm>", prog );
 	exit(2);
 }
 
@@ -38,7 +38,6 @@ main( int argc, char **argv )
 
 	//fprintf( stderr, "Running inotifyd\n");
 	int ch;
-	bool init = true;
 	const char *p = "inotifyd";
 	std::string logfile = "inotifyd.log";
 	std::string logpath = "/var/log/inotifyd";
@@ -50,7 +49,7 @@ main( int argc, char **argv )
 	int idx = 0;
 	bool alwaysFprintfStderr = false;
 
-	while( (ch = getopt_long(argc, argv, "S:C:tp:l:D:sc:in:dDh", options, &idx) ) != -1 ) {
+	while( (ch = getopt_long(argc, argv, "S:C:tp:l:D:sc:n:dDh", options, &idx) ) != -1 ) {
 		//fprintf(stderr, "Processing -%c option\n", ch );
 		switch( ch ) {
 			case 'C':
@@ -63,10 +62,6 @@ main( int argc, char **argv )
 				service = false;
 				break;
 			case 'c':
-				if( init == true ) {
-					_log.error("%s: usage - cannot use -c <config-file> and -i (init static) at the same time",argv[0]);
-					exit(1);
-				}
 				config = strdup(optarg);
 				//fprintf( stderr, "loading configuration from: %s\n", config );
 				break;
@@ -75,13 +70,6 @@ main( int argc, char **argv )
 				break;
 			case 'l':
 				logfile = std::string(optarg);
-				break;
-			case 'i':
-				if( config != NULL ) {
-					_log.error("%s: usage - cannot use -c <config-file> and -i (init static) at the same time",argv[0]);
-					exit(1);
-				}
-				init = false;
 				break;
 			case 'n':
 				p = strdup(optarg);
@@ -132,90 +120,8 @@ main( int argc, char **argv )
 
 	// :.,'as/\("[^"]*"\) \("[^"]*"\)[ ]*\(".*\)/\3, \1, \2, 0660
 
-	if( init ) {
-		_log.info("using static initialization set");
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/allthisjazz", "radio", "allthisjazz", 0770, 0660 ) );
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/audio-backup", "rivendell", "kwgs", 0770, -1 ) );
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/BSI KEYS-Trg", "radio", "radio", 0770, 0660 ) );
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/event log archive", "radio", "producers", 0770, 0660 ) );
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/folksalad", "radio", "folksalad", 0770, 0660 ) );
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Max", "radio", "kwgs", 0770, 0660 ) );
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/rhythmatlas", "radio", "rhythmatlas", 0770, 0660 ) );
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/rivendell-varsnd", "rivendell", "rivendell", 0775, 0664 ) );
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/scripts", "radio", "radio", 0770, 0660 ) );
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/swing", "radio", "swing", 0770, 0660 ) );
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/TuPublicScholars", "radio", "tupublicscholars", 0770, 0660 ) );
-
-		  // !'aawk '{print "	addPerms( wl, new DirPerms( \"/kwgs-pool/newOperations/"$9" "$10" "$11" "$12"\", \""$3"\", \""$4"\", 0770, 0660 ) );  // " $1 }'
-		
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Opera", "radio", "kwgs", 0770, 0660 ) );               // drwxrwxr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Announcements", "radio", "kwgs", 0775, 0664 ) );       // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/audio", "radio", "kwgs", 0770, 0660 ) );               // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/classical tulsa", "radio", "kwgs", 0770, 0660 ) );     // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/contentdepot", "radio", "kwgs", 0775, 0664 ) );        // drwsr-sr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/copyLogs", "radio", "kwgs", 0770, 0660 ) );            // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/database-backup", "radio", "kwgs", 0777, 0660 ) );     // drwxrwsrwx+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/EAS", "radio", "kwgs", 0775, 0664 ) );                 // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Elizabeth", "radio", "kwgs", 0770, 0660 ) );           // drwxrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Engineer Test Audio", "radio", "kwgs", 0770, 0660 ) ); // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/evergreens", "radio", "kwgs", 0770, 0660 ) );          // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/fill music folder", "radio", "kwgs", 0775, 0664 ) );   // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/ftp", "radio", "kwgs", 0775, 0664 ) );                 // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Fund Drive", "radio", "kwgs", 0775, 0664 ) );          // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/fund drive folder", "radio", "kwgs", 0770, 0660 ) );   // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Hurricane Sports", "radio", "kwgs", 0775, 0664 ) );    // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/IDs", "radio", "kwgs", 0775, 0664 ) );                 // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Julianne", "radio", "kwgs", 0770, 0660 ) );            // drwxrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwg1", "radio", "kwgs", 0770, 0660 ) );                // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwg1 carts", "radio", "kwgs", 0770, 0660 ) );          // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwg1 event logs", "radio", "kwgs", 0775, 0664 ) );     // drwsr-sr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwg1 recordings", "radio", "kwgs", 0770, 0660 ) );     // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwg1 records", "radio", "kwgs", 0770, 0660 ) );        // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwg2", "radio", "kwgs", 0770, 0660 ) );                // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwg2 carts", "radio", "kwgs", 0770, 0660 ) );          // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwg2 event logs", "radio", "kwgs", 0770, 0660 ) );     // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwg2 recordings", "radio", "kwgs", 0770, 0660 ) );     // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwg3", "radio", "kwgs", 0770, 0660 ) );                // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwg3 carts", "radio", "kwgs", 0770, 0660 ) );          // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwg3 event logs", "radio", "kwgs", 0770, 0660 ) );     // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwg3 recordings", "radio", "kwgs", 0770, 0660 ) );     // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/KWGS Live Broadcast", "radio", "kwgs", 0775, 0664 ) ); // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt1", "radio", "kwgs", 0770, 0660 ) );                // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt1 carts", "radio", "kwgs", 0770, 0660 ) );          // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt1 event logs", "radio", "kwgs", 0775, 0664 ) );     // drwsr-sr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt1 recordings", "radio", "kwgs", 0770, 0660 ) );     // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt2", "radio", "kwgs", 0770, 0660 ) );                // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt2 carts", "radio", "kwgs", 0770, 0660 ) );          // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt2 christmas music", "radio", "kwgs", 0775, 0664 ) );// drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt2 event logs", "radio", "kwgs", 0775, 0664 ) );     // drwsr-sr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt2 music", "radio", "kwgs", 0775, 0664 ) );          // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt2 recordings", "radio", "kwgs", 0770, 0660 ) );     // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt3", "radio", "kwgs", 0770, 0660 ) );                // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt3 carts", "radio", "kwgs", 0770, 0660 ) );          // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt3 event logs", "radio", "kwgs", 0775, 0664 ) );     // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/kwt3 recordings", "radio", "kwgs", 0770, 0660 ) );     // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/KWTU Live Broadcast", "radio", "kwgs", 0775, 0664 ) ); // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Music T2 Duplicate", "radio", "kwgs", 0770, 0660 ) );  // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/NaturalLog", "radio", "kwgs", 0770, 0660 ) );          // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/news", "radio", "kwgs", 0770, 0660 ) );                // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Newscasts", "radio", "kwgs", 0770, 0660 ) );           // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/news cuts", "radio", "kwgs", 0770, 0660 ) );           // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/News Old Stories", "radio", "kwgs", 0770, 0660 ) );    // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/normnews", "radio", "kwgs", 0770, 0660 ) );            // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/programs", "radio", "kwgs", 0775, 0660 ) );            // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Promos", "radio", "kwgs", 0775, 0664 ) );              // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/PSAs", "radio", "kwgs", 0775, 0664 ) );                // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Rivendell-Reports", "radio", "kwgs", 0775, 0664 ) );   // drwxrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/shared carts", "radio", "kwgs", 0770, 0660 ) );        // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Stingers", "radio", "kwgs", 0775, 0664 ) );            // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/studiotulsa", "radio", "kwgs", 0770, 0660 ) );         // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Test", "radio", "kwgs", 0775, 0664 ) );                // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/transmitter logs", "radio", "kwgs", 0775, 0664 ) );    // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/TSO", "radio", "kwgs", 0770, 0660 ) );                 // drwsrws---+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Under Writing", "radio", "kwgs", 0775, 0664 ) );       // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Weather", "radio", "kwgs", 0775, 0664 ) );             // drwsrwsr-x+
-		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations", "radio", "kwgs", 0775, -1 ) );
-	} else if( config != NULL ) {
+	// Also load from any specified config file
+	if( config != NULL ) {
 		CSVload ld;
 
 		if( ld.loadFile(config) != 0 ) {

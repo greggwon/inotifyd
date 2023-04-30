@@ -9,11 +9,12 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include "logger.hpp"
+#include "WatchList.hpp"
 
 /**
  *  Construct an instance with only a directory name
  */
-DirPerms::DirPerms(const char *path, bool changes=true) : _log(path) {
+DirPerms::DirPerms(const char *path, bool changes) : _log(path) {
 	std::ifstream g_file( "/proc/sys/kernel/random/uuid", std::ifstream::in );
 	makeChanges = changes;
 	g_file >> _guid;
@@ -29,7 +30,7 @@ DirPerms::DirPerms(const char *path, bool changes=true) : _log(path) {
  *  filePerms: permissions on files
  *  changes: true, by default, to cause fixes to be made to user/group and perms.
  */
-DirPerms::DirPerms( const char *path,  const char *user,  const char *group, int dirPerms, int filePerms, bool changes=true) : DirPerms(path) {
+DirPerms::DirPerms( const char *path,  const char *user,  const char *group, int dirPerms, int filePerms, bool changes) : DirPerms(path) {
 	makeChanges = changes;
 	_dperms = dirPerms;
 	_perms = filePerms;
@@ -38,7 +39,7 @@ DirPerms::DirPerms( const char *path,  const char *user,  const char *group, int
 	_group = group;
 }
 
-std::string DirPerms::formatPerms( int mask, bool canSetId=false ) {
+std::string DirPerms::formatPerms( int mask, bool canSetId ) {
 	std::string t = "";
 	if( mask & 04 ) {
 		t += "r";
@@ -72,7 +73,7 @@ std::string DirPerms::getDescr() {
 		+formatPerms((getRootPerms()>>6)&07, getRootPerms() & S_ISUID)
 		+formatPerms((getRootPerms()>>3)&07, getRootPerms() & S_ISGID)
 		+formatPerms((getRootPerms())&07)
-		+", file-perms="
+		+", file-perms=-"
 		+formatPerms((getPerms()>>6)&07, getPerms() & S_ISUID)
 		+formatPerms((getPerms()>>3)&07, getPerms() & S_ISGID)
 		+formatPerms((getPerms())&07)
@@ -85,7 +86,7 @@ std::string DirPerms::getDescr() {
 int DirPerms::checkPerms(bool debugging) {
 	DIR *d;
 	struct dirent *de;
-
+	_log.info("checking perms for dir: %s", _path.c_str());
 	d = opendir(_path.c_str());
 	if (d == NULL) {
 		_log.perror(_path.c_str());
@@ -112,7 +113,7 @@ int DirPerms::checkPerms(bool debugging) {
 	return changed;
 }
 
-int DirPerms::checkFile( const char *file, const char *user, const char *grp, int perms, bool debugging = true, bool onlyFiles= true ) {
+int DirPerms::checkFile( const char *file, const char *user, const char *grp, int perms, bool debugging, bool onlyFiles ) {
 	struct stat sbuf;
 	int exists;
 	debugging = debugging || !makeChanges;

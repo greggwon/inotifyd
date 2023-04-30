@@ -3,8 +3,9 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <stdlib.h>
+#include "csvload.hpp"
 
-void addPerms( WatchList &wl, DirPerms * perms ) {
+static void addPerms( WatchList &wl, DirPerms * perms ) {
 	Logger _log( "addPerms" );
 	wl.add( perms );
 	std::string desc = perms->getDescr();
@@ -35,7 +36,7 @@ main( int argc, char **argv )
 	WatchList wl;
 	Logger _log( "main" );
 
-	fprintf( stderr, "Running inotifyd\n");
+	//fprintf( stderr, "Running inotifyd\n");
 	int ch;
 	bool init = true;
 	const char *p = "inotifyd";
@@ -50,7 +51,7 @@ main( int argc, char **argv )
 	bool alwaysFprintfStderr = false;
 
 	while( (ch = getopt_long(argc, argv, "S:C:tp:l:D:sc:in:dDh", options, &idx) ) != -1 ) {
-		// fprintf(stderr, "Processing -%c option\n", ch );
+		//fprintf(stderr, "Processing -%c option\n", ch );
 		switch( ch ) {
 			case 'C':
 				logCount = atoi( optarg );
@@ -67,6 +68,7 @@ main( int argc, char **argv )
 					exit(1);
 				}
 				config = strdup(optarg);
+				//fprintf( stderr, "loading configuration from: %s\n", config );
 				break;
 			case 'p':
 				logpath = std::string(optarg);
@@ -213,6 +215,17 @@ main( int argc, char **argv )
 		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Under Writing", "radio", "kwgs", 0775, 0664 ) );       // drwsrwsr-x+
 		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations/Weather", "radio", "kwgs", 0775, 0664 ) );             // drwsrwsr-x+
 		addPerms( wl, new DirPerms( "/kwgs-pool/newOperations", "radio", "kwgs", 0775, -1 ) );
+	} else if( config != NULL ) {
+		CSVload ld;
+
+		if( ld.loadFile(config) != 0 ) {
+			exit(2);
+		}
+		std::list<DirPerms*> *perms = ld.getLoaded();
+		for( auto i = perms->begin(); i != perms->end(); ++i ) {
+			fprintf(stderr, "loaded %s\n", (*i)->getDescr().c_str() );
+			addPerms( wl, *i );
+		}
 	}
 
 	while( optind < argc ) {

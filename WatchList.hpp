@@ -10,6 +10,9 @@
 #include <sys/stat.h>
 #include "logger.hpp"
 
+#ifndef __WATCHLIST_HPP__
+#define __WATCHLIST_HPP__
+
 class DirPerms {
 private:
 	std::string _path;	// Path to directory
@@ -26,7 +29,7 @@ public:
 	/**
 	 *  Construct an instance with only a directory name
 	 */
-	DirPerms(const char *path, bool changes=true) : _log(path);
+	DirPerms(const char *path, bool changes=true);
 	/**
 	 *  Construct an instance with directory name and user/group and perms settings
 	 *
@@ -38,12 +41,13 @@ public:
 	 *  changes: true, by default, to cause fixes to be made to user/group and perms.
 	 */
 	DirPerms( const char *path,  const char *user,  const char *group, int dirPerms, int filePerms, bool changes=true);
+
 	std::string formatPerms( int mask, bool canSetId=false );
 
 	/**
 	 *  Provide virtual destructor for any potential subclass
 	 */
-	virtual ~DirPerms(){};
+	virtual ~DirPerms();
 
 	std::string getDescr();
 
@@ -77,3 +81,5 @@ public:
 	void addPerms( std::vector<DirPerms *> & perms);
 	void removePerms( std::vector<DirPerms*> & perms);
 };
+
+#endif

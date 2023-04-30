@@ -4,6 +4,7 @@ OFILES=\
 	INotifyd.o \
 	logger.o \
 	WatchList.o \
+	csvload.o \
 	main.o
 
 LDFLAGS=-g

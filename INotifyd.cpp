@@ -90,8 +90,9 @@ bool INotifyd::watch(WatchList & list)
 					time_t now;
 					time(&now);
 					_log.info( "%.24s: event(%d:%d): %s: %s", ctime(&now), cnt, ev->len, list[i]->getPath().c_str(), describeEvent(ev->mask, ev->name, ev->len ).c_str() );
+					list[i]->checkPerms(debugging);
+					break;
 				}
-				list[i]->checkPerms(debugging);
 			}
 			int l = sizeof(*ev)+ev->len;
 			ev = (struct inotify_event *)(((char *)ev) + l);

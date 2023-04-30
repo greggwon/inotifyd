@@ -6,6 +6,7 @@ OFILES=\
 	main.o
 
 LDFLAGS=-g
+MANDIR=/usr/local/share/man/man8/
 
 EXE=/usr/local/bin
 SYSTEMD=/etc/systemd/user
@@ -18,8 +19,11 @@ main.o: INotifyd.hpp WatchList.hpp logger.hpp
 
 install: ${HOME}/bin/inotify
 
-service: ${EXE}/inotifyd ${SYSTEMD}/inotifyd.service
+service: ${EXE}/inotifyd ${SYSTEMD}/inotifyd.service ${MANDIR}/inotifyd.8
 	systemctl enable inotifyd
+
+${MANDIR}/inotifyd.8: inotifyd.8
+	cp $< $@
 
 ${SYSTEMD}/inotifyd.service: inotifyd.service
 	cp inotifyd.service ${SYSTEMD}/inotifyd.service

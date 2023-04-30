@@ -1,0 +1,81 @@
+.TH inotifyd 8 2023-05-01 Gregg_Wonderly
+
+.SH NAME
+inotifyd
+.SH SYNOPSIS
+inotifyd [-dsit] [-D loglevel] [-c <config>] [-l <log-file>] [-n <log-name>] [--help] <dir:user:group:dir-perm:file-perm>
+.SH DESCRIPTION
+The inotifyd service will accept a set of command line arguments as discussed below. The service will process inotify(2) events regarding ATTRIB
+changes and creation of new files.  It will validate owner/group IDs and permissions and make changes to anything that doesn't meet the details provided in
+each entry it is configured to process.
+.SH OPTIONS
+.B -d
+.RS
+Don't make any actual changes to user/group or permissions just describe what would need to be changed.
+.RE
+.B -s
+.RS
+Run in non-service mode to just make a single pass over all configured directory structures and exit.
+.RE
+.B -i
+.RS
+Use directory specificaton compiled into the current executable.
+.RE
+.B -t
+.RS
+Stop logging to terminal/stderr.
+.RE
+.B -D loglevel
+.RS
+specify the logging level to use.  One of ERROR, EMERG, CRIT, ALERT, WARNING, NOTICE, INFO, DEBUG.
+.RE
+.B -c config
+.RS
+The specified CSV config file will be read to determine which directories to monitor and the appropriate user/group and permissions to apply.
+.RE
+.B -l logfile
+.RS
+The indicated logfile name will be used instead of
+.BI inotifyd.log.
+.RE
+.B -n log name
+.RS
+The syslog use and the log file will specify this name as the source instead of
+.BI inotifyd.
+.RE
+.B --help
+.RS
+The usage message will be generated and the program exited with a non-zero exit code.
+.RE
+.I <dir:user:group:dir-perm:file-perm>
+.RS
+The specified directory, user/owner, group and directory permissions will be asserted for the indicated directory.  Files inside of that diretory will have 
+there user/group set to the same as the directory and the file permissios will be set according to the file-perm argument.  The dir-perm and file-perm values
+are octal numbers indicated permission masks where 4 is read, 2 is write and 1 is execute permissions. 
+.RE
+.SH EXIT STATUS
+The exits status will be success or fail based on the arguments provided on the command line.
+.SH ENVIRONMENT
+The value of ${USER}, if provided, is the default
+.B -n
+specified log name value.
+.SH FILES
+The
+.B /var/log/inotifyd
+directory is used for logging.
+.SH NOTES
+When installed as a service, stderr logging can be disabled with the
+.B -t
+argument.
+.SH BUGS
+.SH EXAMPLE
+.B inotifyd -s -i -d
+.RS
+Runs a scan of all directory trees and describes all user/group and permissions
+.RE
+.B inotifyd -s -i
+.RS
+Runs a scan of all directory trees and performs all user/group and permissions
+.RE
+.SH SEE ALSO
+.B inotify(2)

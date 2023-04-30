@@ -3,6 +3,7 @@ CPPFLAGS=-std=gnu++11 -g
 OFILES=\
 	INotifyd.o \
 	logger.o \
+	WatchList.o \
 	main.o
 
 LDFLAGS=-g
@@ -16,6 +17,7 @@ inotify: ${OFILES}
 
 INotifyd.o: INotifyd.hpp WatchList.hpp logger.hpp
 main.o: INotifyd.hpp WatchList.hpp logger.hpp
+WatchList.o: INotifyd.hpp WatchList.hpp logger.hpp
 
 install: ${HOME}/bin/inotify
 

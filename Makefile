@@ -11,7 +11,7 @@ LDFLAGS=-g
 MANDIR=/usr/local/share/man/man8/
 
 EXE=/usr/local/bin
-SYSTEMD=/etc/systemd/user
+SYSTEMD=/etc/systemd/system
 
 inotify: ${OFILES}
 	${CXX} -o $@ $(OFILES) $(LDFLAGS)
